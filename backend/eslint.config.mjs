@@ -1,47 +1,41 @@
+import nextEslintPlugin from '@next/eslint-plugin-next';
 import js from '@eslint/js';
-import tsPlugin from '@typescript-eslint/eslint-plugin';
-import tsParser from '@typescript-eslint/parser';
-import nextPlugin from '@next/eslint-plugin-next';
 import globals from 'globals';
 
 export default [
-  { 
-    ignores: ['.next/*', 'node_modules/*'] 
+  {
+    ignores: [
+      '**/test-*.js',
+      '**/temp-*.js',
+      '**/temp-*.mjs',
+      '**/*test.mjs',
+      '**/check-interfaces.js',
+      '**/direct-blinkit-test.js',
+      '**/test-scraper-temp.js',
+      '**/test-scraper-direct.js',
+      '**/test-simple.js',
+      '**/test-scrapers.js',
+      '**/verify-scrapers.js'
+    ]
   },
   // Use recommended JS configuration
   js.configs.recommended,
   {
-    files: ['**/*.ts', '**/*.tsx'],
+    files: ['**/*.{js,mjs,cjs,ts,tsx,jsx}'],
     plugins: {
-      '@typescript-eslint': tsPlugin,
-      '@next/next': nextPlugin,
+      '@next/next': nextEslintPlugin
     },
     languageOptions: {
-      parser: tsParser,
-      parserOptions: {
-        project: './tsconfig.json',
-      },
+      ecmaVersion: 'latest',
+      sourceType: 'module',
       globals: {
         ...globals.node,
-        ...globals.browser,
-        React: true,
-        JSX: true,
+        ...globals.browser
       }
     },
     rules: {
-      // Disable Node.js global errors
-      'no-undef': 'off',
-      
-      // Handle unused variables - Turn off completely
-      'no-unused-vars': 'off',
-      '@typescript-eslint/no-unused-vars': 'off',
-      
-      // TypeScript specific rules
       '@typescript-eslint/no-explicit-any': 'warn',
-      
-      // Next.js specific rules
-      '@next/next/no-html-link-for-pages': 'warn',
-      '@next/next/no-img-element': 'warn',
+      'no-unused-vars': 'warn'
     }
   }
 ];

@@ -18,11 +18,20 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Missing required parameters: item and pincode' }, { status: 400 });
   }
 
-  console.log(`Fetching prices for ${item} in ${pincode} using real-time scrapers`);
+  console.log(`[API] Fetching prices for "${item}" in ${pincode} using real-time scrapers`);
 
   try {
     // Fetch real data from scrapers
     const scrapedData = await scrapeAllPlatforms(item, pincode);
+    
+    // Log detailed results for debugging
+    console.log(`[API] Got ${scrapedData.results.length} results for "${item}"`);
+    scrapedData.results.forEach(result => {
+      console.log(`[API] ${result.platform}: Found "${result.productTitle}" (${result.quantity || 'no quantity'}) - Price: ${result.price || 'N/A'}`);
+      if (result.error) {
+        console.log(`[API] ${result.platform} Error: ${result.error}`);
+      }
+    });
     
     // Save to database unless SKIP_DB_INIT is true
     if (process.env.SKIP_DB_INIT !== 'true') {
@@ -44,7 +53,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Error fetching prices:', error);
+    console.error('[API] Error fetching prices:', error);
     return NextResponse.json({ 
       error: 'Failed to fetch prices',
       message: error instanceof Error ? error.message : String(error)

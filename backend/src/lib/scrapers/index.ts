@@ -14,6 +14,8 @@ export interface ScraperResult {
   deliveryEta: string | null;
   imageUrl?: string | null;
   error?: string;
+  originalPrice?: string | null;
+  discount?: string | null;
 }
 
 // Export type for other modules
@@ -46,7 +48,9 @@ export async function scrapeAllPlatforms(item: string, pincode: string): Promise
       available: result.available,
       deliveryEta: result.deliveryEta || null,
       imageUrl: result.imageUrl || null,
-      error: result.error
+      error: result.error,
+      originalPrice: result.originalPrice || null,
+      discount: result.discount || null
     });
   } else {
     results.push({
@@ -70,7 +74,9 @@ export async function scrapeAllPlatforms(item: string, pincode: string): Promise
       available: result.available,
       deliveryEta: result.deliveryEta || null,
       imageUrl: result.imageUrl || null,
-      error: result.error
+      error: result.error,
+      originalPrice: result.originalPrice || null,
+      discount: result.discount || null
     });
   } else {
     results.push({
@@ -94,7 +100,9 @@ export async function scrapeAllPlatforms(item: string, pincode: string): Promise
       available: result.available,
       deliveryEta: result.deliveryEta || null,
       imageUrl: result.imageUrl || null,
-      error: result.error
+      error: result.error,
+      originalPrice: result.originalPrice || null,
+      discount: result.discount || null
     });
   } else {
     results.push({
@@ -118,7 +126,9 @@ export async function scrapeAllPlatforms(item: string, pincode: string): Promise
       available: result.available,
       deliveryEta: result.deliveryEta || null,
       imageUrl: result.imageUrl || null,
-      error: result.error
+      error: result.error,
+      originalPrice: result.originalPrice || null,
+      discount: result.discount || null
     });
   } else {
     results.push({
@@ -143,7 +153,9 @@ export async function scrapeAllPlatforms(item: string, pincode: string): Promise
       available: result.available,
       deliveryEta: result.deliveryEta || null,
       imageUrl: result.imageUrl || null,
-      error: result.error
+      error: result.error,
+      originalPrice: result.originalPrice || null,
+      discount: result.discount || null
     });
   } else {
     results.push({
@@ -168,7 +180,9 @@ export async function scrapeAllPlatforms(item: string, pincode: string): Promise
       available: result.available,
       deliveryEta: result.deliveryEta || null,
       imageUrl: result.imageUrl || null,
-      error: result.error
+      error: result.error,
+      originalPrice: result.originalPrice || null,
+      discount: result.discount || null
     });
   } else {
     results.push({

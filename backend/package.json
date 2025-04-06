@@ -8,11 +8,13 @@
   "scripts": {
     "dev": "next dev",
     "build": "SKIP_DB_INIT=true next build",
+    "build:nolint": "SKIP_DB_INIT=true SKIP_LINT=true next build",
     "start": "next start",
     "start:custom": "ts-node src/server.ts",
     "start:prod": "NODE_ENV=production npm run build && NODE_ENV=production npm run start:custom",
     "lint": "next lint",
     "init-db": "ts-node src/lib/db/init-db.ts",
+    "test-blinkit": "NODE_OPTIONS='--experimental-specifier-resolution=node' ts-node --esm src/lib/scrapers/test-blinkit.mjs",
     "heroku-postbuild": "SKIP_DB_INIT=true npm run build"
   },
   "eslintConfig": {
@@ -24,6 +26,7 @@
     "next": "15.2.4",
     "pg": "^8.14.1",
     "playwright": "^1.51.1",
+    "puppeteer": "^24.6.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
@@ -40,6 +43,7 @@
     "eslint": "^9",
     "eslint-config-next": "15.2.4",
     "globals": "^16.0.0",
-    "typescript": "^5"
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3"
   }
 }
