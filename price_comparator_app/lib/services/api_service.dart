@@ -11,7 +11,7 @@ class ApiService {
   static const String developmentUrl = 'http://192.168.0.100:3000';
   
   // Toggle this to switch between production and development
-  static final bool useDevServer = true;
+  static final bool useDevServer = false;  // Set to false to use production
   
   // Current base URL based on environment
   static String get baseUrl => useDevServer ? developmentUrl : productionUrl;

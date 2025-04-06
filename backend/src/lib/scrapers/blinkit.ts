@@ -5,6 +5,7 @@ export interface ScrapedResult {
   platform: string;
   productTitle?: string;
   price?: string;
+  quantity?: string;
   available: boolean;
   deliveryEta?: string;
   imageUrl?: string;
@@ -26,6 +27,7 @@ export async function scrapeBlinkit(query: string, pincode: string): Promise<Scr
     
     const context = await browser.newContext({
       userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+      viewport: { width: 1280, height: 720 }
     });
     
     const page = await context.newPage();
@@ -51,7 +53,7 @@ export async function scrapeBlinkit(query: string, pincode: string): Promise<Scr
     await page.press('input[type="search"]', 'Enter');
     
     // Wait for search results
-    await page.waitForTimeout(3000);
+    await page.waitForTimeout(5000);
     
     // Extract first product information
     try {
@@ -62,24 +64,66 @@ export async function scrapeBlinkit(query: string, pincode: string): Promise<Scr
       
       // Extract product details
       const productTitle = await firstProduct.locator('.product__name').textContent() || `${query} (Blinkit)`;
-      const price = await firstProduct.locator('.product__price').textContent() || 'Price not available';
-      const imageUrl = await firstProduct.locator('img').getAttribute('src') || '';
+      
+      // Extract price - be more precise with selectors and remove currency symbol
+      let priceText = await firstProduct.locator('.product__price').textContent() || 'Price not available';
+      let price = priceText.trim();
+      
+      // Extract quantity information (often part of the title or in a separate element)
+      let quantity = 'Not specified';
+      try {
+        // Look for quantity in product name or dedicated element
+        const weightMatch = productTitle.match(/(\d+\s*[gGkKlLmM][gGlL]?\b|\d+\s*pieces|\d+\s*pack)/);
+        if (weightMatch) {
+          quantity = weightMatch[0].trim();
+        } else {
+          // Try to find quantity in a dedicated element
+          const quantityElement = await firstProduct.locator('.product__qty, .product__weight').textContent();
+          if (quantityElement) {
+            quantity = quantityElement.trim();
+          }
+        }
+      } catch (quantityError) {
+        console.log('Failed to extract quantity:', quantityError);
+      }
+      
+      // Get high-resolution image URL
+      let imageUrl = '';
+      try {
+        // Try different image selectors
+        imageUrl = await firstProduct.locator('img').getAttribute('src') || '';
+        
+        // If image URL is lazy-loaded, try data attributes
+        if (!imageUrl || imageUrl.includes('placeholder') || imageUrl.includes('lazy')) {
+          imageUrl = await firstProduct.locator('img').getAttribute('data-src') || 
+                     await firstProduct.locator('img').getAttribute('data-lazy-src') || 
+                     await firstProduct.locator('img').getAttribute('data-original') || '';
+        }
+        
+        // Ensure we have a full URL
+        if (imageUrl && !imageUrl.startsWith('http')) {
+          imageUrl = imageUrl.startsWith('//') ? `https:${imageUrl}` : `https://blinkit.com${imageUrl}`;
+        }
+      } catch (imageError) {
+        console.log('Failed to extract image URL:', imageError);
+      }
       
       // Check if product is available
       const outOfStock = await firstProduct.locator('.product--out-of-stock').count() > 0;
       
       // Get delivery time if available
-      let deliveryEta = 'Unknown';
+      let deliveryEta = '10-15 min';
       try {
         deliveryEta = await page.locator('.delivery-time__estimation').textContent() || '10-15 min';
       } catch (error) {
-        console.log('Delivery time not found:', error);
+        console.log('Delivery time not found, using default value');
       }
       
       return {
         platform: 'Blinkit',
         productTitle,
         price,
+        quantity,
         available: !outOfStock,
         deliveryEta,
         imageUrl,

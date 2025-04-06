@@ -5,7 +5,10 @@ export async function scrapeInstamart(item: string, pincode: string): Promise<Sc
   const browser = await chromium.launch({ headless: true });
   
   try {
-    const context = await browser.newContext();
+    const context = await browser.newContext({
+      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36',
+      viewport: { width: 1366, height: 768 }
+    });
     const page = await context.newPage();
     
     // Navigate to Swiggy Instamart
@@ -40,6 +43,9 @@ export async function scrapeInstamart(item: string, pincode: string): Promise<Sc
       throw new Error('No products found on Swiggy Instamart');
     });
     
+    // Take screenshot for debugging
+    await page.screenshot({ path: 'instamart-search.png' });
+    
     // Get the first product
     const firstProduct = await page.$$('.product-card').then(elements => elements[0]);
     
@@ -53,6 +59,24 @@ export async function scrapeInstamart(item: string, pincode: string): Promise<Sc
     const outOfStockElement = await firstProduct.$('.out-of-stock, .sold-out');
     const available = !outOfStockElement;
     
+    // Extract quantity information
+    let quantity = 'Not specified';
+    try {
+      // First try to find dedicated quantity element
+      const quantityElement = await firstProduct.$('.product-weight, .package-size, .quantity-info');
+      if (quantityElement) {
+        quantity = await quantityElement.textContent() || 'Not specified';
+      } else {
+        // Extract from product title if possible
+        const weightMatch = productTitle.match(/(\d+\s*[gGkKlLmM][gGlL]?\b|\d+\s*pieces|\d+\s*pack|\d+\s*x\s*\d+|\d+\s*(ml|ltr|L))/i);
+        if (weightMatch) {
+          quantity = weightMatch[0].trim();
+        }
+      }
+    } catch (quantityError) {
+      console.log('Failed to extract quantity:', quantityError);
+    }
+    
     // Extract delivery ETA if available
     let deliveryEta = null;
     try {
@@ -65,6 +89,21 @@ export async function scrapeInstamart(item: string, pincode: string): Promise<Sc
     let imageUrl = null;
     try {
       imageUrl = await firstProduct.$eval('.product-image img', el => el.getAttribute('src') || null);
+      
+      // If image URL is lazy-loaded, try data attributes
+      if (!imageUrl || imageUrl.includes('placeholder') || imageUrl.includes('lazy')) {
+        imageUrl = await firstProduct.$eval('img', el => 
+          el.getAttribute('data-src') || 
+          el.getAttribute('data-lazy-src') || 
+          el.getAttribute('data-original') || 
+          el.getAttribute('src') || null
+        );
+      }
+      
+      // Ensure we have a full URL
+      if (imageUrl && !imageUrl.startsWith('http')) {
+        imageUrl = imageUrl.startsWith('//') ? `https:${imageUrl}` : `https://instamart.swiggy.com${imageUrl}`;
+      }
     } catch (_unused) {
       // Image not available
     }
@@ -73,6 +112,7 @@ export async function scrapeInstamart(item: string, pincode: string): Promise<Sc
       platform: 'Swiggy Instamart',
       productTitle,
       price,
+      quantity,
       available,
       deliveryEta,
       imageUrl

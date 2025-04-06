@@ -9,6 +9,7 @@ export interface ScraperResult {
   platform: string;
   productTitle: string;
   price: string | null;
+  quantity: string | null;
   available: boolean;
   deliveryEta: string | null;
   imageUrl?: string | null;
@@ -41,6 +42,7 @@ export async function scrapeAllPlatforms(item: string, pincode: string): Promise
       platform: result.platform,
       productTitle: result.productTitle || item,
       price: result.price || null,
+      quantity: result.quantity || null,
       available: result.available,
       deliveryEta: result.deliveryEta || null,
       imageUrl: result.imageUrl || null,
@@ -51,6 +53,7 @@ export async function scrapeAllPlatforms(item: string, pincode: string): Promise
       platform: 'Blinkit',
       productTitle: item,
       price: null,
+      quantity: null,
       available: false,
       deliveryEta: null,
       error: blinkitResult.reason?.message || 'Failed to scrape'
@@ -63,6 +66,7 @@ export async function scrapeAllPlatforms(item: string, pincode: string): Promise
       platform: result.platform,
       productTitle: result.productTitle || item,
       price: result.price || null,
+      quantity: result.quantity || null,
       available: result.available,
       deliveryEta: result.deliveryEta || null,
       imageUrl: result.imageUrl || null,
@@ -73,6 +77,7 @@ export async function scrapeAllPlatforms(item: string, pincode: string): Promise
       platform: 'Zepto',
       productTitle: item,
       price: null,
+      quantity: null,
       available: false,
       deliveryEta: null,
       error: zeptoResult.reason?.message || 'Failed to scrape'
@@ -85,6 +90,7 @@ export async function scrapeAllPlatforms(item: string, pincode: string): Promise
       platform: result.platform,
       productTitle: result.productTitle || item,
       price: result.price || null,
+      quantity: result.quantity || null,
       available: result.available,
       deliveryEta: result.deliveryEta || null,
       imageUrl: result.imageUrl || null,
@@ -95,6 +101,7 @@ export async function scrapeAllPlatforms(item: string, pincode: string): Promise
       platform: 'D-Mart',
       productTitle: item,
       price: null,
+      quantity: null,
       available: false,
       deliveryEta: null,
       error: dmartResult.reason?.message || 'Failed to scrape'
@@ -107,6 +114,7 @@ export async function scrapeAllPlatforms(item: string, pincode: string): Promise
       platform: result.platform,
       productTitle: result.productTitle || item,
       price: result.price || null,
+      quantity: result.quantity || null,
       available: result.available,
       deliveryEta: result.deliveryEta || null,
       imageUrl: result.imageUrl || null,
@@ -117,6 +125,7 @@ export async function scrapeAllPlatforms(item: string, pincode: string): Promise
       platform: 'Instamart',
       productTitle: item,
       price: null,
+      quantity: null,
       available: false,
       deliveryEta: null,
       error: instamartResult.reason?.message || 'Failed to scrape'
@@ -130,6 +139,7 @@ export async function scrapeAllPlatforms(item: string, pincode: string): Promise
       platform: result.platform,
       productTitle: result.productTitle || item,
       price: result.price || null,
+      quantity: result.quantity || null,
       available: result.available,
       deliveryEta: result.deliveryEta || null,
       imageUrl: result.imageUrl || null,
@@ -140,6 +150,7 @@ export async function scrapeAllPlatforms(item: string, pincode: string): Promise
       platform: 'BigBasket',
       productTitle: item,
       price: null,
+      quantity: null,
       available: false,
       deliveryEta: null,
       error: bigBasketResult.reason?.message || 'Failed to scrape'
@@ -153,6 +164,7 @@ export async function scrapeAllPlatforms(item: string, pincode: string): Promise
       platform: result.platform,
       productTitle: result.productTitle || item,
       price: result.price || null,
+      quantity: result.quantity || null,
       available: result.available,
       deliveryEta: result.deliveryEta || null,
       imageUrl: result.imageUrl || null,
@@ -163,6 +175,7 @@ export async function scrapeAllPlatforms(item: string, pincode: string): Promise
       platform: 'JioMart',
       productTitle: item,
       price: null,
+      quantity: null,
       available: false,
       deliveryEta: null,
       error: jioMartResult.reason?.message || 'Failed to scrape'
