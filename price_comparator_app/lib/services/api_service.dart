@@ -3,8 +3,8 @@ import 'package:dio/dio.dart';
 import 'package:price_comparator_app/models/price_result.dart';
 
 class ApiService {
-  // Update to use the host machine's IP address on the same WiFi network
-  static const String baseUrl = 'http://192.168.0.100:3000';
+  // Update to use the production endpoint
+  static const String baseUrl = 'http://10.244.17.31:8080';
   // Other options:
   // - Android emulator: 'http://10.0.2.2:3000'
   // - iOS simulator: 'http://localhost:3000'
