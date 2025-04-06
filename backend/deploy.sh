@@ -3,10 +3,51 @@
 # Exit on error
 set -e
 
+# Function to sanitize environment variables
+sanitize_env() {
+  for var in DB_USERNAME DB_PASSWORD DB_HOST DB_PORT DB_DATABASE DB_SSL_MODE API_PORT NODE_ENV; do
+    if [ -n "${!var}" ]; then
+      # Remove newlines and trailing spaces
+      cleaned_value=$(echo "${!var}" | tr -d '\n' | tr -d '\r' | sed 's/ *$//')
+      export "$var"="$cleaned_value"
+      
+      # Don't print password
+      if [ "$var" = "DB_PASSWORD" ]; then
+        echo "Sanitized $var=[HIDDEN]"
+      else
+        echo "Sanitized $var=$cleaned_value"
+      fi
+    fi
+  done
+}
+
 # Check for required environment variables
 if [ -z "$DB_USERNAME" ] || [ -z "$DB_PASSWORD" ] || [ -z "$DB_HOST" ] || [ -z "$DB_PORT" ] || [ -z "$DB_DATABASE" ]; then
   echo "Loading environment variables from .env file..."
-  export $(grep -v '^#' .env | xargs)
+  if [ -f ".env" ]; then
+    # Use grep to extract variables without evaluation/expansion
+    # And manually export them
+    while IFS= read -r line; do
+      # Skip comments and empty lines
+      if [ -n "$line" ] && [[ ! "$line" =~ ^# ]]; then
+        # Extract variable name and value
+        var=$(echo "$line" | cut -d '=' -f 1)
+        val=$(echo "$line" | cut -d '=' -f 2-)
+        # Export the variable
+        export "$var"="$val"
+        echo "Loaded $var from .env file"
+      fi
+    done < .env
+    
+    # Sanitize loaded variables
+    sanitize_env
+  else
+    echo "ERROR: .env file not found and environment variables not set"
+    exit 1
+  fi
+else
+  echo "Using environment variables from system"
+  sanitize_env
 fi
 
 # Display configuration (mask password)

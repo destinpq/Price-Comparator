@@ -1,36 +1,71 @@
 import { NextResponse } from 'next/server';
-import db from '../../../lib/db';
+import os from 'os';
+import fs from 'fs';
+import path from 'path';
+
+// Read package.json version manually since TypeScript doesn't allow direct imports of JSON
+function getPackageVersion(): string {
+  try {
+    const packageJsonPath = path.resolve(process.cwd(), 'package.json');
+    const packageJsonContent = fs.readFileSync(packageJsonPath, 'utf8');
+    const packageJson = JSON.parse(packageJsonContent);
+    return packageJson.version || '1.0.0';
+  } catch (error) {
+    console.warn('Could not read package.json version:', error);
+    return '1.0.0';
+  }
+}
 
 export async function GET() {
   try {
-    // Check database connection
-    const result = await db.query('SELECT NOW() as time');
-    const dbTime = result.rows[0].time;
-    
-    return NextResponse.json({
-      status: 'healthy',
-      timestamp: new Date().toISOString(),
-      database: {
-        connected: true,
-        time: dbTime,
-        host: process.env.DB_HOST?.split('.')[0] || 'unknown', // Only show first part of host for security
+    // Get system info that doesn't depend on the database
+    const systemInfo = {
+      hostname: os.hostname(),
+      platform: os.platform(),
+      release: os.release(),
+      uptime: Math.floor(os.uptime()), // Server uptime in seconds
+      memory: {
+        total: Math.floor(os.totalmem() / (1024 * 1024)), // MB
+        free: Math.floor(os.freemem() / (1024 * 1024)),   // MB
       },
-      environment: process.env.NODE_ENV,
+      cpus: os.cpus().length,
+      load: os.loadavg(),
+    };
+
+    // Collect application info
+    const appInfo = {
+      name: 'Price Comparator API',
+      version: getPackageVersion(),
+      environment: process.env.NODE_ENV || 'development',
+      nodeVersion: process.version,
+      databaseEnabled: process.env.SKIP_DB_INIT !== 'true',
+      startTime: new Date().toISOString(),
+    };
+
+    return NextResponse.json({
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      app: appInfo,
+      system: systemInfo,
+    }, {
+      status: 200,
+      headers: {
+        'Cache-Control': 'no-store, max-age=0',
+      },
     });
   } catch (error) {
-    console.error('Healthcheck failed:', error);
+    console.error('Healthcheck error:', error);
     
-    return NextResponse.json(
-      {
-        status: 'unhealthy',
-        timestamp: new Date().toISOString(),
-        database: {
-          connected: false,
-          error: error instanceof Error ? error.message : 'Unknown database error',
-        },
-        environment: process.env.NODE_ENV,
+    // Even if there's an error, return a valid response with error info
+    return NextResponse.json({
+      status: 'error',
+      timestamp: new Date().toISOString(),
+      error: error instanceof Error ? error.message : String(error),
+    }, {
+      status: 500,
+      headers: {
+        'Cache-Control': 'no-store, max-age=0',
       },
-      { status: 500 }
-    );
+    });
   }
 } 

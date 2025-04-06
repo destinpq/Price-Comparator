@@ -1,0 +1,16 @@
+# Build output
+.next
+out
+dist
+
+# Node modules
+node_modules
+
+# Environment files
+.env
+.env.*
+
+# Temp files
+.DS_Store
+.cache
+*.log 

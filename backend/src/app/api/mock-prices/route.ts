@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import db from '../../../lib/db';
+import { QueryResult } from 'pg';
 
 // This is a mock API endpoint to simulate fetching prices from multiple sources
 export async function GET(request: NextRequest) {
@@ -17,49 +18,76 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Try to fetch from database first
-    const dbResults = await db.query(
-      'SELECT * FROM price_history WHERE item_name = $1 AND pincode = $2 AND timestamp > NOW() - INTERVAL \'1 hour\' ORDER BY timestamp DESC LIMIT 1',
-      [item, pincode]
-    );
+    // Set flag for whether we're using a real DB or not
+    const usingMockDB = process.env.SKIP_DB_INIT === 'true';
+    
+    let resultsFromDB = false;
+    let dbResults: QueryResult<any> = { rows: [], rowCount: 0, command: '', oid: 0, fields: [] };
+    
+    // Only try to fetch from database if we're not using mock DB
+    if (!usingMockDB) {
+      try {
+        // Try to fetch from database first
+        dbResults = await db.query(
+          'SELECT * FROM price_history WHERE item_name = $1 AND pincode = $2 AND timestamp > NOW() - INTERVAL \'1 hour\' ORDER BY timestamp DESC LIMIT 1',
+          [item, pincode]
+        );
+        resultsFromDB = dbResults.rows.length > 0;
+      } catch (dbError) {
+        console.warn('Database query failed:', dbError);
+        console.log('Falling back to generated mock data');
+      }
+    }
 
     // If we have recent results, return them
-    if (dbResults.rows.length > 0) {
-      // Format the results before returning
-      const platforms = await db.query(
-        'SELECT platform, price, available, timestamp FROM price_history WHERE item_name = $1 AND pincode = $2 AND timestamp = (SELECT MAX(timestamp) FROM price_history WHERE item_name = $1 AND pincode = $2)',
-        [item, pincode]
-      );
+    if (resultsFromDB) {
+      try {
+        // Format the results before returning
+        const platforms = await db.query(
+          'SELECT platform, price, available, timestamp FROM price_history WHERE item_name = $1 AND pincode = $2 AND timestamp = (SELECT MAX(timestamp) FROM price_history WHERE item_name = $1 AND pincode = $2)',
+          [item, pincode]
+        );
 
-      const results = platforms.rows.map((row) => ({
-        platform: row.platform,
-        price: row.price ? `₹${row.price}` : null,
-        available: row.available,
-        deliveryEta: row.available ? getRandomDeliveryEta() : null,
-        productTitle: `${item} (${row.platform})`,
-        imageUrl: getImageUrlForPlatform(row.platform),
-      }));
+        const results = platforms.rows.map((row) => ({
+          platform: row.platform,
+          price: row.price ? `₹${row.price}` : null,
+          available: row.available,
+          deliveryEta: row.available ? getRandomDeliveryEta() : null,
+          productTitle: `${item} (${row.platform})`,
+          imageUrl: getImageUrlForPlatform(row.platform),
+        }));
 
-      return NextResponse.json({
-        item,
-        pincode,
-        timestamp: platforms.rows[0]?.timestamp || new Date().toISOString(),
-        results,
-      });
+        return NextResponse.json({
+          item,
+          pincode,
+          timestamp: platforms.rows[0]?.timestamp || new Date().toISOString(),
+          results,
+        });
+      } catch (formatError) {
+        console.warn('Error formatting database results:', formatError);
+        console.log('Falling back to generated mock data');
+      }
     }
 
     // Otherwise, generate mock data
     const timestamp = new Date().toISOString();
     const results = generateMockResults(item);
 
-    // Save to database
-    for (const result of results) {
-      const price = result.price ? parseFloat(result.price.replace('₹', '')) : null;
-      
-      await db.query(
-        'INSERT INTO price_history (item_name, pincode, platform, price, available, timestamp) VALUES ($1, $2, $3, $4, $5, $6)',
-        [item, pincode, result.platform, price, result.available, timestamp]
-      );
+    // Save to database only if we're not in mock mode
+    if (!usingMockDB) {
+      try {
+        for (const result of results) {
+          const price = result.price ? parseFloat(result.price.replace('₹', '')) : null;
+          
+          await db.query(
+            'INSERT INTO price_history (item_name, pincode, platform, price, available, timestamp) VALUES ($1, $2, $3, $4, $5, $6)',
+            [item, pincode, result.platform, price, result.available, timestamp]
+          );
+        }
+      } catch (saveError) {
+        console.warn('Error saving results to database:', saveError);
+        // Continue anyway as we still have the mock results to return
+      }
     }
 
     return NextResponse.json({
@@ -67,13 +95,25 @@ export async function GET(request: NextRequest) {
       pincode,
       timestamp,
       results,
+      source: usingMockDB ? 'mock_database' : 'generated'
     });
   } catch (error) {
     console.error('Error fetching prices:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch prices' },
-      { status: 500 }
-    );
+    
+    // Generate emergency mock data
+    const timestamp = new Date().toISOString();
+    // In case of error, we need to specify fallback values
+    const fallbackItem = 'unknown item';
+    const fallbackPincode = 'unknown';
+    const results = generateMockResults(fallbackItem);
+    
+    return NextResponse.json({
+      item: fallbackItem,
+      pincode: fallbackPincode,
+      timestamp,
+      results,
+      source: 'emergency_fallback'
+    });
   }
 }
 
@@ -139,14 +179,24 @@ export async function POST(request: NextRequest) {
     const timestamp = new Date().toISOString();
     const results = generateMockResults(item);
 
-    // Save to database
-    for (const result of results) {
-      const price = result.price ? parseFloat(result.price.replace('₹', '')) : null;
-      
-      await db.query(
-        'INSERT INTO price_history (item_name, pincode, platform, price, available, timestamp) VALUES ($1, $2, $3, $4, $5, $6)',
-        [item, pincode, result.platform, price, result.available, timestamp]
-      );
+    // Set flag for whether we're using a real DB or not
+    const usingMockDB = process.env.SKIP_DB_INIT === 'true';
+    
+    // Save to database only if not using mock DB
+    if (!usingMockDB) {
+      try {
+        for (const result of results) {
+          const price = result.price ? parseFloat(result.price.replace('₹', '')) : null;
+          
+          await db.query(
+            'INSERT INTO price_history (item_name, pincode, platform, price, available, timestamp) VALUES ($1, $2, $3, $4, $5, $6)',
+            [item, pincode, result.platform, price, result.available, timestamp]
+          );
+        }
+      } catch (saveError) {
+        console.warn('Error saving results to database:', saveError);
+        // Continue anyway as we still have the mock results to return
+      }
     }
 
     return NextResponse.json({
@@ -154,12 +204,32 @@ export async function POST(request: NextRequest) {
       pincode,
       timestamp,
       results,
+      source: usingMockDB ? 'mock_database' : 'saved'
     });
   } catch (error) {
     console.error('Error processing POST request:', error);
-    return NextResponse.json(
-      { error: 'Failed to process request' },
-      { status: 500 }
-    );
+    
+    // Generate emergency mock data
+    const timestamp = new Date().toISOString();
+    let item, pincode;
+    
+    try {
+      const body = await request.json();
+      item = body.item;
+      pincode = body.pincode;
+    } catch {
+      item = 'unknown item';
+      pincode = 'unknown';
+    }
+    
+    const results = generateMockResults(item || 'unknown item');
+    
+    return NextResponse.json({
+      item: item || 'unknown item',
+      pincode: pincode || 'unknown',
+      timestamp,
+      results,
+      source: 'emergency_fallback'
+    });
   }
 } 

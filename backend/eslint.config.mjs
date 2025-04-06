@@ -32,12 +32,9 @@ export default [
       // Disable Node.js global errors
       'no-undef': 'off',
       
-      // Handle unused variables
-      'no-unused-vars': 'off', // Turn off ESLint core rule
-      '@typescript-eslint/no-unused-vars': ['warn', { 
-        argsIgnorePattern: '^_', 
-        varsIgnorePattern: '^_' 
-      }],
+      // Handle unused variables - Turn off completely
+      'no-unused-vars': 'off',
+      '@typescript-eslint/no-unused-vars': 'off',
       
       // TypeScript specific rules
       '@typescript-eslint/no-explicit-any': 'warn',

@@ -11,6 +11,9 @@
     "lint": "next lint",
     "init-db": "ts-node src/lib/db/init-db.ts"
   },
+  "eslintConfig": {
+    "extends": "next/core-web-vitals"
+  },
   "dependencies": {
     "axios": "^1.8.4",
     "dotenv": "^16.4.7",

@@ -23,6 +23,22 @@ You can test the API directly in your browser by visiting:
 https://hammerhead-app-wafj8.ondigitalocean.app/api/mock-prices?item=milk&pincode=400001
 ```
 
+### Local Development
+
+To connect to a local development server:
+
+1. Make sure your backend server is running on your machine
+2. Find your computer's local IP address using `ipconfig` (Windows) or `ifconfig` (Mac/Linux)
+3. Update the `developmentUrl` variable in `lib/services/api_service.dart` with your IP:
+```dart
+static const String developmentUrl = 'http://YOUR_IP_ADDRESS:3000';
+```
+4. Make sure `useDevServer` is set to `true`:
+```dart
+static final bool useDevServer = true;
+```
+5. Run the app on a device connected to the same network
+
 ## Getting Started
 
 ### Prerequisites
@@ -63,6 +79,11 @@ If you encounter connection issues:
 - Ensure you have a working internet connection
 - Try refreshing the data using the refresh button
 - Check if the backend service is operational by visiting the test URL in a browser
+- When using a local development server, make sure:
+  - Your device is on the same network as your computer
+  - You've used the correct IP address
+  - The port (default 3000) is not blocked by your firewall
+  - You've set `useDevServer = true` in the API service
 
 ## Contributing
 
