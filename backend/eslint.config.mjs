@@ -1,27 +1,44 @@
-import globals from "globals";
-import nextjs from "@eslint/eslintrc/config-schema-json/schemas/eslint-recommended.json" assert { type: "json" };
-import { FlatCompat } from "@eslint/eslintrc";
+import js from '@eslint/js';
+import tsPlugin from '@typescript-eslint/eslint-plugin';
+import tsParser from '@typescript-eslint/parser';
+import nextPlugin from '@next/eslint-plugin-next';
+import globals from 'globals';
 
-const compat = new FlatCompat({
-  recommendedConfig: nextjs,
-  baseDirectory: import.meta.dirname
-});
-
-/** @type {import('eslint').Linter.FlatConfig[]} */
 export default [
-  {
-    ignores: ["node_modules/", "dist/", ".next/", "public/"],
+  { 
+    ignores: ['.next/*', 'node_modules/*'] 
   },
-  ...compat.config({
-    extends: ["next/core-web-vitals"],
-  }),
+  // Use recommended JS configuration
+  js.configs.recommended,
   {
-    files: ["**/*.ts", "**/*.tsx"],
+    files: ['**/*.ts', '**/*.tsx'],
+    plugins: {
+      '@typescript-eslint': tsPlugin,
+      '@next/next': nextPlugin,
+    },
     languageOptions: {
-      globals: globals.browser,
+      parser: tsParser,
+      parserOptions: {
+        project: './tsconfig.json',
+      },
+      globals: {
+        ...globals.node,
+        ...globals.browser,
+        React: true,
+        JSX: true,
+      }
     },
     rules: {
-      "no-unused-vars": ["error", { "argsIgnorePattern": "^_" }]
+      // Disable Node.js global errors
+      'no-undef': 'off',
+      
+      // TypeScript specific rules
+      '@typescript-eslint/no-explicit-any': 'warn',
+      '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
+      
+      // Next.js specific rules
+      '@next/next/no-html-link-for-pages': 'warn',
+      '@next/next/no-img-element': 'warn',
     }
   }
 ];

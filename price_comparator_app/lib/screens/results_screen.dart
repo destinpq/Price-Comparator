@@ -55,7 +55,7 @@ class ResultsScreen extends ConsumerWidget {
       body: resultsAsync.when(
         data: (response) => _buildResults(context, response, searchData),
         loading: () => _buildLoading(),
-        error: (error, stackTrace) => _buildError(context, error),
+        error: (error, stackTrace) => _buildError(context, error, ref),
       ),
     );
   }
@@ -263,142 +263,153 @@ class ResultsScreen extends ConsumerWidget {
     PriceResult? bestPrice,
   ) {
     final isBestPrice = bestPrice != null && result.platform == bestPrice.platform;
-
+    
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: isBestPrice
-            ? BorderSide(
-                color: Theme.of(context).colorScheme.primary,
-                width: 2,
-              )
-            : BorderSide.none,
-      ),
+      color: isBestPrice ? Colors.green[50] : null,
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Row(
+        padding: const EdgeInsets.all(12.0),
+        child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Image if available
-            if (result.imageUrl != null)
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: Image.network(
-                  result.imageUrl!,
-                  width: 70,
-                  height: 70,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => Container(
-                    width: 70,
-                    height: 70,
-                    color: Colors.grey[200],
-                    child: const Icon(Icons.image_not_supported, color: Colors.grey),
-                  ),
-                ),
-              ),
-            const SizedBox(width: 16),
-            // Details
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+            Row(
+              children: [
+                Expanded(
+                  child: Row(
                     children: [
+                      Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[200],
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: result.imageUrl != null
+                            ? ClipRRect(
+                                borderRadius: BorderRadius.circular(4),
+                                child: Image.network(
+                                  result.imageUrl!,
+                                  fit: BoxFit.cover,
+                                  loadingBuilder: (_, child, loadingProgress) {
+                                    if (loadingProgress == null) return child;
+                                    return Center(
+                                      child: SizedBox(
+                                        width: 16,
+                                        height: 16,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          value: loadingProgress.expectedTotalBytes != null
+                                              ? loadingProgress.cumulativeBytesLoaded /
+                                                  loadingProgress.expectedTotalBytes!
+                                              : null,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                  errorBuilder: (_, __, ___) {
+                                    return Icon(
+                                      Icons.shopping_bag,
+                                      size: 16,
+                                      color: Colors.grey[600],
+                                    );
+                                  },
+                                ),
+                              )
+                            : Icon(
+                                Icons.shopping_bag,
+                                size: 16,
+                                color: Colors.grey[600],
+                              ),
+                      ),
+                      const SizedBox(width: 12),
                       Expanded(
-                        child: Text(
-                          result.platform,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              result.platform,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            if (result.productTitle != null) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                result.productTitle!,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey[600],
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ],
                         ),
                       ),
-                      if (isBestPrice)
-                        const Icon(
-                          Icons.verified,
-                          color: Colors.green,
-                          size: 20,
-                        ),
                     ],
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    result.productTitle,
-                    style: TextStyle(
-                      color: Colors.grey[800],
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      if (result.available)
-                        const Icon(
-                          Icons.check_circle,
-                          color: Colors.green,
-                          size: 16,
-                        )
-                      else
-                        const Icon(
-                          Icons.cancel,
-                          color: Colors.red,
-                          size: 16,
-                        ),
-                      const SizedBox(width: 4),
-                      Text(
-                        result.available ? 'In Stock' : 'Out of Stock',
+                ),
+                result.available
+                    ? Text(
+                        result.price ?? 'Price unavailable',
                         style: TextStyle(
-                          color: result.available ? Colors.green : Colors.red,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          color: isBestPrice ? Colors.green[700] : null,
+                        ),
+                      )
+                    : const Text(
+                        'Unavailable',
+                        style: TextStyle(
+                          color: Colors.red,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
-                      if (result.deliveryEta != null) ...[
-                        const Spacer(),
-                        const Icon(
-                          Icons.delivery_dining,
-                          size: 16,
-                          color: Colors.blue,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          result.deliveryEta!,
-                          style: const TextStyle(
-                            color: Colors.blue,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ],
+              ],
+            ),
+            if (result.available && result.deliveryEta != null) ...[
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Icon(
+                    Icons.access_time,
+                    size: 14,
+                    color: Colors.grey[600],
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Delivery in ${result.deliveryEta}',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey[600],
+                    ),
                   ),
                 ],
               ),
-            ),
-            const SizedBox(width: 8),
-            // Price
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                if (result.price != null)
-                  Text(
-                    result.price!,
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                      color: isBestPrice
-                          ? Colors.green
-                          : Theme.of(context).colorScheme.primary,
+            ],
+            if (isBestPrice)
+              Padding(
+                padding: const EdgeInsets.only(top: 8.0),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.check_circle,
+                      color: Colors.green[700],
+                      size: 14,
                     ),
-                  )
-                else
-                  Text(
-                    'N/A',
-                    style: TextStyle(
-                      color: Colors.grey[500],
-                      fontStyle: FontStyle.italic,
+                    const SizedBox(width: 4),
+                    Text(
+                      'Best Price',
+                      style: TextStyle(
+                        color: Colors.green[700],
+                        fontWeight: FontWeight.w500,
+                        fontSize: 12,
+                      ),
                     ),
-                  ),
-              ],
-            ),
+                  ],
+                ),
+              ),
           ],
         ),
       ),
@@ -477,7 +488,13 @@ class ResultsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildError(BuildContext context, Object error) {
+  Widget _buildError(BuildContext context, Object error, WidgetRef ref) {
+    String errorMessage = error.toString();
+    // Remove the Exception: prefix for cleaner display
+    if (errorMessage.startsWith('Exception: ')) {
+      errorMessage = errorMessage.substring('Exception: '.length);
+    }
+    
     return SingleChildScrollView(
       child: Center(
         child: Padding(
@@ -498,15 +515,15 @@ class ResultsScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'Error Loading Prices',
+                  'Connection Error',
                   style: Theme.of(context).textTheme.headlineSmall,
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 16),
                 Flexible(
                   child: SingleChildScrollView(
                     child: Text(
-                      error.toString(),
+                      errorMessage,
                       style: Theme.of(context).textTheme.bodyMedium,
                       textAlign: TextAlign.center,
                     ),
@@ -519,6 +536,15 @@ class ResultsScreen extends ConsumerWidget {
                   },
                   icon: const Icon(Icons.arrow_back),
                   label: const Text('Go Back'),
+                ),
+                const SizedBox(height: 12),
+                OutlinedButton.icon(
+                  onPressed: () {
+                    // Refresh the data using the passed ref
+                    ref.invalidate(priceResultsProvider);
+                  },
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Try Again'),
                 ),
               ],
             ),

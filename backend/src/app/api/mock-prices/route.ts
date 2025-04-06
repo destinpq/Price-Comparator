@@ -36,6 +36,8 @@ export async function GET(request: NextRequest) {
         price: row.price ? `₹${row.price}` : null,
         available: row.available,
         deliveryEta: row.available ? getRandomDeliveryEta() : null,
+        productTitle: `${item} (${row.platform})`,
+        imageUrl: getImageUrlForPlatform(row.platform),
       }));
 
       return NextResponse.json({
@@ -91,6 +93,8 @@ function generateMockResults(item: string) {
       price,
       available,
       deliveryEta: available ? getRandomDeliveryEta() : null,
+      productTitle: `${item} (${platform})`,
+      imageUrl: getImageUrlForPlatform(platform),
     };
   });
 }
@@ -101,33 +105,58 @@ function getRandomDeliveryEta() {
   return options[Math.floor(Math.random() * options.length)];
 }
 
+// Get image URL based on platform
+function getImageUrlForPlatform(platform: string) {
+  switch (platform) {
+    case 'Blinkit':
+      return 'https://cdn.grofers.com/cdn-cgi/image/f=auto,fit=scale-down,q=85,metadata=none,w=250,h=250/app/images/products/sliding_image/391306a.jpg';
+    case 'Zepto':
+      return 'https://ik.imagekit.io/zst/products/tr:n-ik_ml_v1/57361103.jpg';
+    case 'D-Mart':
+      return 'https://www.dmartindia.com/images/product/large/DP0000002139.jpg';
+    case 'Instamart':
+      return 'https://cdn.swiggy.com/image/upload/fl_lossy,f_auto,q_auto,w_300,h_300/rng/md/carousel/production/z3mg2rhkw8knfhyifp2s';
+    default:
+      return null;
+  }
+}
+
+// POST method implementation
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { item, pincode } = body;
-    
+
+    // Validate parameters
     if (!item || !pincode) {
       return NextResponse.json(
-        { error: 'Missing required parameters: item and pincode' },
+        { error: 'Item and pincode parameters are required' },
         { status: 400 }
       );
     }
-    
-    // Customize mock data with the requested item name
-    const customData = {
-      ...mockData,
-      results: mockData.results.map(result => ({
-        ...result,
-        productTitle: `${item} (Demo)`,
-      }))
-    };
-    
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    return NextResponse.json(customData);
+
+    // Generate mock data for the POST request
+    const timestamp = new Date().toISOString();
+    const results = generateMockResults(item);
+
+    // Save to database
+    for (const result of results) {
+      const price = result.price ? parseFloat(result.price.replace('₹', '')) : null;
+      
+      await db.query(
+        'INSERT INTO price_history (item_name, pincode, platform, price, available, timestamp) VALUES ($1, $2, $3, $4, $5, $6)',
+        [item, pincode, result.platform, price, result.available, timestamp]
+      );
+    }
+
+    return NextResponse.json({
+      item,
+      pincode,
+      timestamp,
+      results,
+    });
   } catch (error) {
-    console.error('Error:', error);
+    console.error('Error processing POST request:', error);
     return NextResponse.json(
       { error: 'Failed to process request' },
       { status: 500 }

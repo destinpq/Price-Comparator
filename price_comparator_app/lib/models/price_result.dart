@@ -1,6 +1,6 @@
 class PriceResult {
   final String platform;
-  final String productTitle;
+  final String? productTitle;
   final String? price;
   final bool available;
   final String? deliveryEta;
@@ -9,7 +9,7 @@ class PriceResult {
 
   PriceResult({
     required this.platform,
-    required this.productTitle,
+    this.productTitle,
     this.price,
     required this.available,
     this.deliveryEta,
@@ -20,7 +20,7 @@ class PriceResult {
   factory PriceResult.fromJson(Map<String, dynamic> json) {
     return PriceResult(
       platform: json['platform'] as String,
-      productTitle: json['productTitle'] as String,
+      productTitle: json['productTitle'] as String?,
       price: json['price'] as String?,
       available: json['available'] as bool,
       deliveryEta: json['deliveryEta'] as String?,
@@ -45,10 +45,14 @@ class PriceResult {
 class PriceResponse {
   final List<PriceResult> results;
   final String timestamp;
+  final String? item;
+  final String? pincode;
 
   PriceResponse({
     required this.results,
     required this.timestamp,
+    this.item,
+    this.pincode,
   });
 
   factory PriceResponse.fromJson(Map<String, dynamic> json) {
@@ -57,6 +61,8 @@ class PriceResponse {
           .map((e) => PriceResult.fromJson(e as Map<String, dynamic>))
           .toList(),
       timestamp: json['timestamp'] as String,
+      item: json['item'] as String?,
+      pincode: json['pincode'] as String?,
     );
   }
 
@@ -64,6 +70,8 @@ class PriceResponse {
     return {
       'results': results.map((e) => e.toJson()).toList(),
       'timestamp': timestamp,
+      'item': item,
+      'pincode': pincode,
     };
   }
 } 
