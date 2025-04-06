@@ -10,9 +10,12 @@ const execAsync = promisify(exec);
 // Define parameter types for the query function
 type QueryParams = string | number | boolean | null | undefined;
 
+// Check if running in build environment
+const isBuildEnv = process.env.NODE_ENV === 'production' && process.env.NEXT_PHASE === 'phase-production-build';
+
 // Mock database for local development
 const mockDB = {
-  query: async (text: string, params?: QueryParams[]): Promise<QueryResult> => {
+  query: async (text: string, params?: QueryParams[]): Promise<QueryResult<any>> => {
     console.log(`[MOCK DB] Query: ${text}`);
     console.log('[MOCK DB] Params:', params);
     
@@ -23,12 +26,12 @@ const mockDB = {
       command: '',
       oid: 0,
       fields: []
-    } as QueryResult;
+    } as QueryResult<any>;
   },
   getClient: async (): Promise<any> => {
     console.log('[MOCK DB] Getting client (mock)');
     return {
-      query: async (text: string, params?: QueryParams[]): Promise<QueryResult> => {
+      query: async (text: string, params?: QueryParams[]): Promise<QueryResult<any>> => {
         console.log(`[MOCK DB] Client Query: ${text}`);
         return {
           rows: [],
@@ -36,7 +39,7 @@ const mockDB = {
           command: '',
           oid: 0,
           fields: []
-        } as QueryResult;
+        } as QueryResult<any>;
       },
       release: () => {
         console.log('[MOCK DB] Releasing client (mock)');
@@ -48,24 +51,34 @@ const mockDB = {
 // Initialize database connection
 async function initializeConnection() {
   try {
-    // Load environment variables
+    // Check if we should skip database initialization
+    if (process.env.SKIP_DB_INIT === 'true' || isBuildEnv) {
+      console.log('SKIP_DB_INIT is set to true or in build environment, using mock database');
+      return null;
+    }
+
+    // Load environment variables (prioritize env files based on environment)
     const envPath = resolve(process.cwd(), '.env');
     const devEnvPath = resolve(process.cwd(), '.env.development');
+    const prodEnvPath = resolve(process.cwd(), '.env.production');
     
-    if (fs.existsSync(devEnvPath) && process.env.NODE_ENV !== 'production') {
+    // Select appropriate env file
+    let envFilePath = envPath;
+    if (process.env.NODE_ENV === 'development' && fs.existsSync(devEnvPath)) {
+      envFilePath = devEnvPath;
       console.log('Loading development configuration from .env.development file...');
-      dotenv.config({ path: devEnvPath });
+    } else if (process.env.NODE_ENV === 'production' && fs.existsSync(prodEnvPath)) {
+      envFilePath = prodEnvPath;
+      console.log('Loading production configuration from .env.production file...');
     } else if (fs.existsSync(envPath)) {
       console.log('Loading database configuration from .env file...');
-      dotenv.config({ path: envPath });
     } else {
       console.log('No .env file found, using system environment variables...');
     }
-
-    // Check if we should skip database initialization
-    if (process.env.SKIP_DB_INIT === 'true') {
-      console.log('SKIP_DB_INIT is set to true, using mock database');
-      return null;
+    
+    // Load environment variables from the selected file
+    if (fs.existsSync(envFilePath)) {
+      dotenv.config({ path: envFilePath });
     }
 
     // Clean and validate environment variables
@@ -147,8 +160,8 @@ async function initializeConnection() {
       console.error(`Unknown error: ${error}`);
     }
     
-    // In production, database errors are critical
-    if (process.env.NODE_ENV === 'production') {
+    // In production, database errors are critical unless we're in build mode
+    if (process.env.NODE_ENV === 'production' && !isBuildEnv) {
       console.error('Fatal error: Database connection failed in production');
       process.exit(1);
     }
@@ -172,9 +185,9 @@ initializeConnection()
 
 // Export database interface with automatic reconnection or mock DB
 export default {
-  query: async (text: string, params?: QueryParams[]): Promise<QueryResult> => {
+  query: async (text: string, params?: QueryParams[]): Promise<QueryResult<any>> => {
     // Check if we should use the mock database
-    if (process.env.SKIP_DB_INIT === 'true') {
+    if (process.env.SKIP_DB_INIT === 'true' || isBuildEnv) {
       return mockDB.query(text, params);
     }
     
@@ -184,7 +197,7 @@ export default {
       pool = await initializeConnection();
       
       if (!pool) {
-        if (process.env.NODE_ENV === 'production') {
+        if (process.env.NODE_ENV === 'production' && !isBuildEnv) {
           throw new Error('Database connection failed in production environment');
         } else {
           console.log('Using mock database in development environment');
@@ -197,7 +210,7 @@ export default {
   },
   getClient: async (): Promise<PoolClient> => {
     // Check if we should use the mock database
-    if (process.env.SKIP_DB_INIT === 'true') {
+    if (process.env.SKIP_DB_INIT === 'true' || isBuildEnv) {
       return mockDB.getClient() as unknown as PoolClient;
     }
     
@@ -207,7 +220,7 @@ export default {
       pool = await initializeConnection();
       
       if (!pool) {
-        if (process.env.NODE_ENV === 'production') {
+        if (process.env.NODE_ENV === 'production' && !isBuildEnv) {
           throw new Error('Database connection failed in production environment');
         } else {
           console.log('Using mock database in development environment');
