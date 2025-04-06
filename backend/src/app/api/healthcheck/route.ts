@@ -3,6 +3,9 @@ import os from 'os';
 import fs from 'fs';
 import path from 'path';
 
+// Force dynamic generation for this route
+export const dynamic = 'force-dynamic';
+
 // Read package.json version manually since TypeScript doesn't allow direct imports of JSON
 function getPackageVersion(): string {
   try {

@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import db from '../../../lib/db';
 import { QueryResult } from 'pg';
 
+// Force dynamic generation for this route
+export const dynamic = 'force-dynamic';
+
 // This is a mock API endpoint to simulate fetching prices from multiple sources
 export async function GET(request: NextRequest) {
   try {
