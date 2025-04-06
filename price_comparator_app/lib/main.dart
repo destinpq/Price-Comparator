@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:price_comparator_app/screens/home_screen.dart';
 
+// App version
+const String appVersion = '1.0.0';
+
 // Simplified version without Hive for quick testing
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -65,7 +68,21 @@ class PriceComparatorApp extends StatelessWidget {
           ),
         ),
       ),
-      home: const HomeScreen(),
+      home: Scaffold(
+        body: const HomeScreen(),
+        // Add version number to bottom of app
+        bottomNavigationBar: Container(
+          height: 24,
+          alignment: Alignment.center,
+          child: Text(
+            'v$appVersion',
+            style: TextStyle(
+              color: Colors.grey[500],
+              fontSize: 12,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

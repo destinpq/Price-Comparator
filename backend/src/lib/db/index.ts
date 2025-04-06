@@ -1,8 +1,15 @@
 import { Pool, QueryResult } from 'pg';
 import dotenv from 'dotenv';
+import { resolve } from 'path';
 
 // Load environment variables from .env file
-dotenv.config();
+dotenv.config({ path: resolve(process.cwd(), '.env') });
+
+// Define parameter types for the query function
+type QueryParams = string | number | boolean | null | undefined;
+
+// Log database connection attempt
+console.log('Attempting to connect to database at:', process.env.DB_HOST);
 
 // Create a connection pool
 const pool = new Pool({
@@ -24,9 +31,6 @@ pool.query('SELECT NOW()', (err: Error | null, _res: QueryResult) => {
     console.log('Database connected successfully');
   }
 });
-
-// Define parameter types for the query function
-type QueryParams = string | number | boolean | null | undefined;
 
 // Export the pool to be used in other modules
 export default {

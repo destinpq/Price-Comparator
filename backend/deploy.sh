@@ -1,21 +1,41 @@
 #!/bin/bash
 
-# Deployment script for the grocery price comparison backend
+# Exit on error
+set -e
+
+# Check for required environment variables
+if [ -z "$DB_USERNAME" ] || [ -z "$DB_PASSWORD" ] || [ -z "$DB_HOST" ] || [ -z "$DB_PORT" ] || [ -z "$DB_DATABASE" ]; then
+  echo "Loading environment variables from .env file..."
+  export $(grep -v '^#' .env | xargs)
+fi
+
+# Display configuration (mask password)
+echo "Deploying with configuration:"
+echo "Database: $DB_HOST:$DB_PORT/$DB_DATABASE"
+echo "User: $DB_USERNAME"
+echo "SSL Mode: $DB_SSL_MODE"
+echo "Environment: $NODE_ENV"
+echo "Port: $API_PORT"
 
 # Install dependencies
 echo "Installing dependencies..."
-npm install
+npm ci
 
 # Install Playwright browsers (headless Chrome)
 echo "Installing Playwright browsers..."
 npx playwright install chromium --with-deps
 
 # Build the application
-echo "Building the application..."
+echo "Building application..."
 npm run build
 
-# Start the server (for standalone deployments)
-# npm start
+# Initialize the database
+echo "Initializing database..."
+npm run init-db
+
+# Start the application
+echo "Starting application..."
+npm run start:custom
 
 # For Vercel deployment, just push to your GitHub repository
 # and connect it to Vercel

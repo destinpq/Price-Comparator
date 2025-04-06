@@ -4,8 +4,8 @@ import 'package:flutter/foundation.dart';
 import 'package:price_comparator_app/models/price_result.dart';
 
 class ApiService {
-  // Production endpoint
-  static const String baseUrl = 'http://10.244.17.31:8080';
+  // Production endpoint on DigitalOcean
+  static const String baseUrl = 'https://hammerhead-app-wafj8.ondigitalocean.app';
   
   final Dio _dio;
 
