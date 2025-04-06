@@ -1,7 +1,9 @@
-import { scrapeBlinkit } from './blinkit';
+import { scrapeBlinkit, ScrapedResult as BlinkitResult } from './blinkit';
 import { scrapeZepto } from './zepto';
 import { scrapeDmart } from './dmart';
 import { scrapeInstamart } from './instamart';
+import { scrapeBigBasket } from './bigbasket';
+import { scrapeJioMart } from './jiomart';
 
 export interface ScraperResult {
   platform: string;
@@ -13,23 +15,37 @@ export interface ScraperResult {
   error?: string;
 }
 
+// Export type for other modules
+export type { BlinkitResult as ScrapedResult };
+
 export async function scrapeAllPlatforms(item: string, pincode: string): Promise<{
   results: ScraperResult[];
   timestamp: string;
 }> {
   // Run scrapers in parallel
-  const [blinkitResult, zeptoResult, dmartResult, instamartResult] = await Promise.allSettled([
+  const [blinkitResult, zeptoResult, dmartResult, instamartResult, bigBasketResult, jioMartResult] = await Promise.allSettled([
     scrapeBlinkit(item, pincode),
     scrapeZepto(item, pincode),
     scrapeDmart(item, pincode),
-    scrapeInstamart(item, pincode)
+    scrapeInstamart(item, pincode),
+    scrapeBigBasket(item, pincode),
+    scrapeJioMart(item, pincode)
   ]);
   
   const results: ScraperResult[] = [];
   
   // Process results
   if (blinkitResult.status === 'fulfilled') {
-    results.push(blinkitResult.value);
+    const result = blinkitResult.value;
+    results.push({
+      platform: result.platform,
+      productTitle: result.productTitle || item,
+      price: result.price || null,
+      available: result.available,
+      deliveryEta: result.deliveryEta || null,
+      imageUrl: result.imageUrl || null,
+      error: result.error
+    });
   } else {
     results.push({
       platform: 'Blinkit',
@@ -42,7 +58,16 @@ export async function scrapeAllPlatforms(item: string, pincode: string): Promise
   }
   
   if (zeptoResult.status === 'fulfilled') {
-    results.push(zeptoResult.value);
+    const result = zeptoResult.value;
+    results.push({
+      platform: result.platform,
+      productTitle: result.productTitle || item,
+      price: result.price || null,
+      available: result.available,
+      deliveryEta: result.deliveryEta || null,
+      imageUrl: result.imageUrl || null,
+      error: result.error
+    });
   } else {
     results.push({
       platform: 'Zepto',
@@ -55,7 +80,16 @@ export async function scrapeAllPlatforms(item: string, pincode: string): Promise
   }
   
   if (dmartResult.status === 'fulfilled') {
-    results.push(dmartResult.value);
+    const result = dmartResult.value;
+    results.push({
+      platform: result.platform,
+      productTitle: result.productTitle || item,
+      price: result.price || null,
+      available: result.available,
+      deliveryEta: result.deliveryEta || null,
+      imageUrl: result.imageUrl || null,
+      error: result.error
+    });
   } else {
     results.push({
       platform: 'D-Mart',
@@ -68,7 +102,16 @@ export async function scrapeAllPlatforms(item: string, pincode: string): Promise
   }
   
   if (instamartResult.status === 'fulfilled') {
-    results.push(instamartResult.value);
+    const result = instamartResult.value;
+    results.push({
+      platform: result.platform,
+      productTitle: result.productTitle || item,
+      price: result.price || null,
+      available: result.available,
+      deliveryEta: result.deliveryEta || null,
+      imageUrl: result.imageUrl || null,
+      error: result.error
+    });
   } else {
     results.push({
       platform: 'Instamart',
@@ -80,8 +123,61 @@ export async function scrapeAllPlatforms(item: string, pincode: string): Promise
     });
   }
   
+  // Process BigBasket result
+  if (bigBasketResult.status === 'fulfilled') {
+    const result = bigBasketResult.value;
+    results.push({
+      platform: result.platform,
+      productTitle: result.productTitle || item,
+      price: result.price || null,
+      available: result.available,
+      deliveryEta: result.deliveryEta || null,
+      imageUrl: result.imageUrl || null,
+      error: result.error
+    });
+  } else {
+    results.push({
+      platform: 'BigBasket',
+      productTitle: item,
+      price: null,
+      available: false,
+      deliveryEta: null,
+      error: bigBasketResult.reason?.message || 'Failed to scrape'
+    });
+  }
+  
+  // Process JioMart result
+  if (jioMartResult.status === 'fulfilled') {
+    const result = jioMartResult.value;
+    results.push({
+      platform: result.platform,
+      productTitle: result.productTitle || item,
+      price: result.price || null,
+      available: result.available,
+      deliveryEta: result.deliveryEta || null,
+      imageUrl: result.imageUrl || null,
+      error: result.error
+    });
+  } else {
+    results.push({
+      platform: 'JioMart',
+      productTitle: item,
+      price: null,
+      available: false,
+      deliveryEta: null,
+      error: jioMartResult.reason?.message || 'Failed to scrape'
+    });
+  }
+  
   return {
     results,
     timestamp: new Date().toISOString()
   };
-} 
+}
+
+export {
+  scrapeBlinkit,
+  scrapeZepto,
+  scrapeBigBasket,
+  scrapeJioMart
+}; 

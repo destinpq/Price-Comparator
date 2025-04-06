@@ -1,27 +1,54 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { saveToDb } from '@/lib/db/save-results';
 import { scrapeAllPlatforms } from '@/lib/scrapers';
 
+// Force dynamic generation for this route
+export const dynamic = 'force-dynamic';
+
+/**
+ * GET handler for fetching prices
+ */
 export async function GET(request: NextRequest) {
-  const searchParams = request.nextUrl.searchParams;
+  const { searchParams } = new URL(request.url);
   const item = searchParams.get('item');
   const pincode = searchParams.get('pincode');
-  
+
+  // Validate parameters
   if (!item || !pincode) {
-    return NextResponse.json(
-      { error: 'Missing required parameters: item and pincode' },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: 'Missing required parameters: item and pincode' }, { status: 400 });
   }
-  
+
+  console.log(`Fetching prices for ${item} in ${pincode} using real-time scrapers`);
+
   try {
-    const results = await scrapeAllPlatforms(item, pincode);
-    return NextResponse.json(results);
+    // Fetch real data from scrapers
+    const scrapedData = await scrapeAllPlatforms(item, pincode);
+    
+    // Save to database unless SKIP_DB_INIT is true
+    if (process.env.SKIP_DB_INIT !== 'true') {
+      await saveToDb({
+        item,
+        pincode,
+        timestamp: scrapedData.timestamp,
+        results: scrapedData.results
+      });
+    }
+
+    // Return response
+    return NextResponse.json({
+      item,
+      pincode,
+      timestamp: scrapedData.timestamp,
+      results: scrapedData.results,
+      source: 'live_data'
+    });
+
   } catch (error) {
-    console.error('Scraping error:', error);
-    return NextResponse.json(
-      { error: 'Failed to scrape price data' },
-      { status: 500 }
-    );
+    console.error('Error fetching prices:', error);
+    return NextResponse.json({ 
+      error: 'Failed to fetch prices',
+      message: error instanceof Error ? error.message : String(error)
+    }, { status: 500 });
   }
 }
 
