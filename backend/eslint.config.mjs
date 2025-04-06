@@ -32,9 +32,15 @@ export default [
       // Disable Node.js global errors
       'no-undef': 'off',
       
+      // Handle unused variables
+      'no-unused-vars': 'off', // Turn off ESLint core rule
+      '@typescript-eslint/no-unused-vars': ['warn', { 
+        argsIgnorePattern: '^_', 
+        varsIgnorePattern: '^_' 
+      }],
+      
       // TypeScript specific rules
       '@typescript-eslint/no-explicit-any': 'warn',
-      '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
       
       // Next.js specific rules
       '@next/next/no-html-link-for-pages': 'warn',

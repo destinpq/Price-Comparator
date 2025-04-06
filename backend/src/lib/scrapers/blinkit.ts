@@ -24,7 +24,7 @@ export async function scrapeBlinkit(item: string, pincode: string): Promise<Scra
         // Wait for location to be set
         await page.waitForSelector('.header-location', { timeout: 10000 });
       }
-    } catch (_) {
+    } catch (_unused) {
       console.log('Location already set or selector not found');
     }
     
@@ -54,7 +54,7 @@ export async function scrapeBlinkit(item: string, pincode: string): Promise<Scra
     let deliveryEta = null;
     try {
       deliveryEta = await firstProduct.$eval('.delivery-time', el => el.textContent?.trim() || null);
-    } catch (_) {
+    } catch (_unused) {
       // Delivery info not available
     }
     
@@ -62,7 +62,7 @@ export async function scrapeBlinkit(item: string, pincode: string): Promise<Scra
     let imageUrl = null;
     try {
       imageUrl = await firstProduct.$eval('img', el => el.getAttribute('src') || null);
-    } catch (_) {
+    } catch (_unused) {
       // Image not available
     }
     

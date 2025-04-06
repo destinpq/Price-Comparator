@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import styles from './page.module.css';
+import Image from 'next/image';
 
 interface PriceResult {
   platform: string;
@@ -115,10 +116,12 @@ export default function Home() {
                 <h3>{result.platform}</h3>
                 <div className={styles.productInfo}>
                   {result.imageUrl && (
-                    <img 
+                    <Image 
                       src={result.imageUrl} 
                       alt={result.productTitle}
                       className={styles.productImage}
+                      width={500}
+                      height={300}
                     />
                   )}
                   <div>

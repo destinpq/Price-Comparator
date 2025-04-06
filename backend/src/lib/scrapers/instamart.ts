@@ -26,7 +26,7 @@ export async function scrapeInstamart(item: string, pincode: string): Promise<Sc
         // Wait for location to be set
         await page.waitForNavigation({ timeout: 10000 });
       }
-    } catch (_) {
+    } catch (_unused) {
       console.log('Location already set or selector not found');
     }
     
@@ -57,7 +57,7 @@ export async function scrapeInstamart(item: string, pincode: string): Promise<Sc
     let deliveryEta = null;
     try {
       deliveryEta = await page.$eval('.delivery-time', el => el.textContent?.trim() || null);
-    } catch (_) {
+    } catch (_unused) {
       // Delivery info not available
     }
     
@@ -65,7 +65,7 @@ export async function scrapeInstamart(item: string, pincode: string): Promise<Sc
     let imageUrl = null;
     try {
       imageUrl = await firstProduct.$eval('.product-image img', el => el.getAttribute('src') || null);
-    } catch (_) {
+    } catch (_unused) {
       // Image not available
     }
     

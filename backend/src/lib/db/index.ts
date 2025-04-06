@@ -1,4 +1,4 @@
-import { Pool } from 'pg';
+import { Pool, QueryResult } from 'pg';
 import dotenv from 'dotenv';
 
 // Load environment variables from .env file
@@ -17,7 +17,7 @@ const pool = new Pool({
 });
 
 // Test the connection
-pool.query('SELECT NOW()', (err, res) => {
+pool.query('SELECT NOW()', (err: Error | null, _res: QueryResult) => {
   if (err) {
     console.error('Error connecting to the database:', err);
   } else {
@@ -25,8 +25,11 @@ pool.query('SELECT NOW()', (err, res) => {
   }
 });
 
+// Define parameter types for the query function
+type QueryParams = string | number | boolean | null | undefined;
+
 // Export the pool to be used in other modules
 export default {
-  query: (text: string, params?: any[]) => pool.query(text, params),
+  query: (text: string, params?: QueryParams[]): Promise<QueryResult> => pool.query(text, params),
   getClient: () => pool.connect(),
 }; 
